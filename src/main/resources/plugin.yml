@@ -1,0 +1,4 @@
+name: LevelledLights
+version: '${project.version}'
+main: ca.noae.levelledlights.LevelledLights
+api-version: '1.20'

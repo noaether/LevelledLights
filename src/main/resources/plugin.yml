@@ -2,3 +2,13 @@ name: LevelledLights
 version: '${project.version}'
 main: ca.noae.levelledlights.LevelledLights
 api-version: '1.20'
+
+commands:
+  help:
+    aliases: ['?']
+    description: 'List and explain all commands.'
+    permission: noae.levelledlights.help
+
+permissions:
+  noae.levelledlights.help:
+    description: 'Access Help Command'

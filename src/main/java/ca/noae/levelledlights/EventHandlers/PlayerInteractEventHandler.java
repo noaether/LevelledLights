@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Slime;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -24,6 +25,15 @@ public class PlayerInteractEventHandler implements Listener {
 
     public PlayerInteractEventHandler(LevelledLights plugin) {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
+    }
+
+    @EventHandler
+    public void onEntityRightClick(PlayerInteractEntityEvent event) {
+        if(
+            isLookingAtLight.get(event.getPlayer().getUniqueId()).equals(event.getRightClicked().getUniqueId()) // checks everything at once
+        ) {
+                event.getPlayer().sendMessage("RightClicked a Slime Light");
+        }
     }
 
     @EventHandler

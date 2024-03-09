@@ -5,18 +5,21 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Slime;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Collection;
 import java.util.List;
 
 public class PlayerInteractEventHandler implements Listener {
+
+    private static LevelledLights plugin;
 
     public PlayerInteractEventHandler(LevelledLights plugin){
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -50,19 +53,31 @@ public class PlayerInteractEventHandler implements Listener {
         Block lookingAt = eventPlayer.getTargetBlock(null, 10);
         if(lookingAt.getType() == Material.LIGHT) {
             Location blockLoc = new Location(eventPlayer.getWorld(), lookingAt.getX() + 0.5, lookingAt.getY() + 0.5, lookingAt.getZ() + 0.5);
-            Collection<FallingBlock> pre_shulkerCollection = eventPlayer.getWorld().getNearbyEntitiesByType(FallingBlock.class, blockLoc.add(0, 0, 0), 5);
+            Collection<Slime> pre_shulkerCollection = eventPlayer.getWorld().getNearbyEntitiesByType(Slime.class, blockLoc.add(0, 0, 0), 5);
 
             if(pre_shulkerCollection.isEmpty()){
-                eventPlayer.getWorld().spawnEntity(blockLoc.add(0, 1, 0), EntityType.FALLING_BLOCK);
+                eventPlayer.getWorld().spawnEntity(blockLoc, EntityType.SLIME);
 
-                eventPlayer.getWorld().getEntitiesByClass(FallingBlock.class).forEach(glowBlock -> {
+                eventPlayer.getWorld().getEntitiesByClass(Slime.class).forEach(glowBlock -> {
+                    glowBlock.setSize(1);
                     glowBlock.setGravity(false);
-                    glowBlock.teleport(glowBlock.getLocation().add(0, 0, 0));
+                    glowBlock.setAI(false);
+                    glowBlock.setInvulnerable(true);
+                    glowBlock.setInvisible(true);
+                    glowBlock.setCollidable(false);
+                    glowBlock.setSilent(true);
                     glowBlock.setGlowing(true);
+
+                    glowBlock.setLootTable(null);
+
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            glowBlock.remove();
+                        }
+                    }.runTaskLater(plugin, 20 * 5);
                 });
             }
-
-            eventPlayer.getWorld().spawnParticle(org.bukkit.Particle.FLAME, blockLoc, 100);
         }
     }
 }

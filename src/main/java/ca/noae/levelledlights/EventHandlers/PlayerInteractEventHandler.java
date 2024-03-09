@@ -1,6 +1,7 @@
 package ca.noae.levelledlights.EventHandlers;
 
 import ca.noae.levelledlights.LevelledLights;
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -32,9 +33,19 @@ public class PlayerInteractEventHandler implements Listener {
         if(
             isLookingAtLight.get(event.getPlayer().getUniqueId()).equals(event.getRightClicked().getUniqueId()) // checks everything at once
         ) {
-                event.getPlayer().sendMessage("RightClicked a Slime Light");
+                event.getPlayer().sendMessage("RightClicked a Slime " + event.getRightClicked().getLocation().getBlock().getType());
         }
     }
+
+    @EventHandler
+    public void onEntityLeftClick(PrePlayerAttackEntityEvent event) {
+        if(
+            isLookingAtLight.get(event.getPlayer().getUniqueId()).equals(event.getAttacked().getUniqueId()) // checks everything at once
+        ) {
+            event.getPlayer().sendMessage("LeftClicked a Slime " + event.getAttacked().getLocation().getBlock().getType());
+        }
+    }
+
 
     @EventHandler
     public void onMove(PlayerMoveEvent event) {
@@ -43,19 +54,19 @@ public class PlayerInteractEventHandler implements Listener {
         if (lookingAt.getType() == Material.LIGHT) {
 
             if(isLookingAtLight.containsKey(eventPlayer.getUniqueId())) {
+                UUID glowBlockID = isLookingAtLight.get(eventPlayer.getUniqueId());
+                if(glowBlockID == null) {
+                    // looking at slime that is not in hashmap, but player just looked at a light...
+                    // happens in case of a bug, or if there's a slime nearby that isn't a light
+                    return;
+                }
+                Slime glowBlock = (Slime) eventPlayer.getWorld().getEntity(glowBlockID);
+                assert glowBlock != null; // we know there's a slime in the hashmap, so this should never be null (except if an admin/creative player kills the slime)
                 new BukkitRunnable() {
                     @Override
                     public void run() {
-                        UUID glowBlockID = isLookingAtLight.get(eventPlayer.getUniqueId());
-                        if(glowBlockID == null) {
-                            // looking at slime that is not in hashmap, but player just looked at a light...
-                            // happens in case of a bug, or if there's a slime nearby that isn't a light
-                            return;
-                        }
-                        Slime glowBlock = (Slime) eventPlayer.getWorld().getEntity(glowBlockID);
-                        assert glowBlock != null; // we know there's a slime in the hashmap, so this should never be null (except if an admin/creative player kills the slime)
+
                         glowBlock.remove();
-                        isLookingAtLight.remove(eventPlayer.getUniqueId()); // remove from hashmap
                         isLookingAtLight.remove(eventPlayer.getUniqueId()); // remove from hashmap
                     }
                 }.runTaskLater(LevelledLights.getInstance(), 20 * 2);

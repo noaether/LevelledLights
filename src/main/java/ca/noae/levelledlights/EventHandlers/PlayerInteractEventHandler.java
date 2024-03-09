@@ -68,14 +68,12 @@ public class PlayerInteractEventHandler implements Listener {
                     glowBlock.setSilent(true);
                     glowBlock.setGlowing(true);
 
-                    glowBlock.setLootTable(null);
-
                     new BukkitRunnable() {
                         @Override
                         public void run() {
                             glowBlock.remove();
                         }
-                    }.runTaskLater(plugin, 20 * 5);
+                    }.runTaskLater(LevelledLights.getInstance(), 20 * 5);
                 });
             }
         }

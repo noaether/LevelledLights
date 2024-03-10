@@ -5,6 +5,7 @@ import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Slime;
@@ -30,19 +31,33 @@ public class PlayerInteractEventHandler implements Listener {
 
     @EventHandler
     public void onEntityRightClick(PlayerInteractEntityEvent event) {
-        if(
-            isLookingAtLight.get(event.getPlayer().getUniqueId()).equals(event.getRightClicked().getUniqueId()) // checks everything at once
+        if (
+                event.getRightClicked().getType() == EntityType.SLIME
         ) {
-                event.getPlayer().sendMessage("RightClicked a Slime " + event.getRightClicked().getLocation().getBlock().getType());
+            Block block = event.getRightClicked().getLocation().getBlock();
+            block.setType(Material.LIGHT);
+
+            final Levelled level = (Levelled) block.getBlockData();
+
+            level.setLevel(level.getLevel() == 15 ? 0: level.getLevel() + 1);
+
+            event.getPlayer().sendBlockChange(block.getLocation(), level);
         }
     }
 
     @EventHandler
     public void onEntityLeftClick(PrePlayerAttackEntityEvent event) {
-        if(
-            isLookingAtLight.get(event.getPlayer().getUniqueId()).equals(event.getAttacked().getUniqueId()) // checks everything at once
+        if (
+                event.getAttacked().getType() == EntityType.SLIME
         ) {
-            event.getPlayer().sendMessage("LeftClicked a Slime " + event.getAttacked().getLocation().getBlock().getType());
+            Block block = event.getAttacked().getLocation().getBlock();
+            block.setType(Material.LIGHT);
+
+            final Levelled level = (Levelled) block.getBlockData();
+
+            level.setLevel(level.getLevel() == 0 ? 15: level.getLevel() - 1);
+
+            event.getPlayer().sendBlockChange(block.getLocation(), level);
         }
     }
 
@@ -52,27 +67,6 @@ public class PlayerInteractEventHandler implements Listener {
         Player eventPlayer = event.getPlayer();
         Block lookingAt = eventPlayer.getTargetBlock(null, 10);
         if (lookingAt.getType() == Material.LIGHT) {
-
-            if(isLookingAtLight.containsKey(eventPlayer.getUniqueId())) {
-                UUID glowBlockID = isLookingAtLight.get(eventPlayer.getUniqueId());
-                if(glowBlockID == null) {
-                    // looking at slime that is not in hashmap, but player just looked at a light...
-                    // happens in case of a bug, or if there's a slime nearby that isn't a light
-                    return;
-                }
-                Slime glowBlock = (Slime) eventPlayer.getWorld().getEntity(glowBlockID);
-                assert glowBlock != null; // we know there's a slime in the hashmap, so this should never be null (except if an admin/creative player kills the slime)
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-
-                        glowBlock.remove();
-                        isLookingAtLight.remove(eventPlayer.getUniqueId()); // remove from hashmap
-                    }
-                }.runTaskLater(LevelledLights.getInstance(), 20 * 2);
-                return;
-            }
-
             Location blockLoc = new Location(eventPlayer.getWorld(), lookingAt.getX() + 0.5, lookingAt.getY() + 0.5, lookingAt.getZ() + 0.5);
 
             if(!eventPlayer.getWorld().getNearbyEntitiesByType(Slime.class, blockLoc, 0.5, 0.5, 0.5).isEmpty()) {
@@ -94,7 +88,19 @@ public class PlayerInteractEventHandler implements Listener {
             glowBlock.setGlowing(true);
 
             // Add player UUID to hashmap, along with the slime UUID
-            isLookingAtLight.put(eventPlayer.getUniqueId(), glowBlockID);
+            if(isLookingAtLight.containsKey(eventPlayer.getUniqueId())) {
+                isLookingAtLight.replace(eventPlayer.getUniqueId(), glowBlockID);
+            } else {
+                isLookingAtLight.put(eventPlayer.getUniqueId(), glowBlockID);
+            }
+        } else if (isLookingAtLight.containsKey(eventPlayer.getUniqueId())) {
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    eventPlayer.getWorld().getEntity(isLookingAtLight.get(eventPlayer.getUniqueId())).remove();
+                    isLookingAtLight.remove(eventPlayer.getUniqueId());
+                }
+            }.runTaskLater(LevelledLights.getInstance(), 20 * 2);
         }
     }
 }
